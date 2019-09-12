@@ -221,3 +221,21 @@ test_skip_version_cache() {
   assertCapturedSuccess
   assertTrue "Version should not be cached" "[ ! -f fake_dir/system.properties ]"
 }
+
+test_downloadBinary_valid() {
+  export HEROKU_GPG_VALIDATION=1
+  capture download_binary "https://lang-jvm.s3.amazonaws.com/jdk/heroku-18/openjdk11.0.4.tar.gz" "goodjdk.tgz"
+  assertCapturedSuccess
+  unset HEROKU_GPG_VALIDATION
+}
+
+test_downloadBinary_invalid() {
+  rm ~/.gnupg/pubring.kbx
+  mv "${BUILDPACK_HOME}/.gnupg/lang-jvm.gpg" tmp.gpg
+  curl -sf -o "${BUILDPACK_HOME}/.gnupg/lang-jvm.gpg" -L "https://www.php.net/distributions/php-keyring.gpg"
+  export HEROKU_GPG_VALIDATION=1
+  capture download_binary "https://lang-jvm.s3.amazonaws.com/jdk/heroku-18/openjdk11.0.4.tar.gz" "badjdk.tgz"
+  assertCapturedError " !     ERROR: Invalid GPG signature!"
+  unset HEROKU_GPG_VALIDATION
+  mv tmp.gpg "${BUILDPACK_HOME}/.gnupg/lang-jvm.gpg"
+}

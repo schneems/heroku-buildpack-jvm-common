@@ -57,8 +57,8 @@ install_java() {
   if [ ! -f "${jdkTarball}" ] && [ ! -f "${javaExe}" ] || is_java_version_change "${jdkDir}" "${jdkVersion}"; then
     rm -rf "${jdkDir}"
     mkdir -p "${jdkDir}"
-    validate_jdk_url ${jdkUrl} ${jdkVersion}
-    curl --retry 3 --silent --show-error --location ${jdkUrl} --output ${jdkTarball}
+    validate_jdk_url "${jdkUrl}" "${jdkVersion}"
+    download_binary "${jdkUrl}" "${jdkTarball}"
     tar pxzf ${jdkTarball} -C "${jdkDir}"
     rm ${jdkTarball}
     install_cacerts ${jdkDir}
@@ -108,6 +108,31 @@ https://help.heroku.com
 Thanks,
 Heroku"
     return 1
+  fi
+}
+
+download_binary() {
+  local jdkUrl="${1:?}"
+  local jdkTarball="${2:?}"
+  local curDir=${JVM_COMMON_DIR:-$(cd $(dirname ${BASH_SOURCE[0]}) && cd .. && pwd )}
+
+  curl --retry 3 --silent --show-error --location "${jdkUrl}" --output "${jdkTarball}"
+
+  if [ "${HEROKU_GPG_VALIDATION:-0}" != "1" ]; then
+    _jvm_mcount "gpg.verify.skip"
+  else
+    curl --retry 3 --silent --show-error --location "${jdkUrl}.gpg" --output "${jdkTarball}.gpg"
+
+    gpg --no-tty --batch --import "${curDir}/.gnupg/lang-jvm.gpg" > /dev/null 2>&1
+
+    if gpg --no-tty --batch --verify "${jdkTarball}.gpg" "${jdkTarball}" > /dev/null 2>&1
+    then
+      _jvm_mcount "gpg.verify.success"
+    else
+      _jvm_mcount "gpg.verify.failed"
+      error_return 'Invalid GPG signature!'
+      return 1
+    fi
   fi
 }
 
