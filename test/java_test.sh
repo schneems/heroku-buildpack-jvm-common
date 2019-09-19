@@ -230,7 +230,7 @@ test_downloadBinary_valid() {
 }
 
 test_downloadBinary_invalid() {
-  rm -f ~/.gnupg/pubring.kbx
+  #rm ~/.gnupg/pubring.kbx
   mv "${BUILDPACK_HOME}/.gnupg/lang-jvm.asc" tmp.asc
   curl -sf -o "${BUILDPACK_HOME}/.gnupg/lang-jvm.asc" -L "https://www.php.net/distributions/php-keyring.gpg"
   export HEROKU_GPG_VALIDATION=1

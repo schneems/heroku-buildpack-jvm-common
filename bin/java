@@ -123,9 +123,14 @@ download_binary() {
   else
     curl --retry 3 --silent --show-error --location "${jdkUrl}.gpg" --output "${jdkTarball}.gpg"
 
-    gpg --no-tty --batch --import "${curDir}/.gnupg/lang-jvm.asc" > /dev/null 2>&1
+    # gpg --no-tty --batch --import "${curDir}/.gnupg/lang-jvm.asc" > /dev/null 2>&1
+    rm -f "${curDir}/.gnupg/lang-jvm.asc.gpg"
+    rm -f lang-jvm.gpg
+    gpg --dearmor "${curDir}/.gnupg/lang-jvm.asc"  > /dev/null 2>&1 # dearmor the file so --keyring can use it
+    mv ${curDir}/.gnupg/lang-jvm.asc.gpg lang-jvm.gpg # change .asc.gpg to just .gpg from the --dearmor step
 
-    if gpg --no-tty --batch --verify "${jdkTarball}.gpg" "${jdkTarball}" > /dev/null 2>&1
+    # if gpg --no-tty --batch --verify "${jdkTarball}.gpg" "${jdkTarball}" > /dev/null 2>&1
+    if gpg --no-tty --batch --no-default-keyring --keyring $(pwd)/lang-jvm.gpg --verify "${jdkTarball}.gpg" "${jdkTarball}"  > /dev/null 2>&1
     then
       _jvm_mcount "gpg.verify.success"
     else
